@@ -1079,25 +1079,12 @@ while true do
 		timeout = config.NeatConfig.TimeoutConstant
 	end
 
-	-- local hitTimer = game.getMarioHitTimer()
-	--
-	-- if checkMarioCollision == true then
-	-- 	if hitTimer > 0 then
-	-- 		marioHitCounter = marioHitCounter + 1
-	-- 		-- console.writeline("Mario took damage, hit counter: " .. marioHitCounter)
-	-- 		checkMarioCollision = false
-	-- 	end
-	-- end
 
 	if memory.read_s8(0x0071) == 0x02 or memory.read_s8(0x0071) == 0x03 or memory.read_s8(0x0071) == 0x04 then
 		memory.write_s8(0x0071, 0x00)
 	end
 
 	--0019 is powerup status (0)
-
-	-- if hitTimer == 0 then
-	-- 	checkMarioCollision = true
-	-- end
 
 	timeout = timeout - 1
 
