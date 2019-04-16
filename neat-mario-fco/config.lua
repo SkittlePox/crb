@@ -13,9 +13,12 @@ _M.State = {
       "YI2.state",				-- Yoshi's Island 2 TO BE RUN ON TRAINING ROM ONLY
  			"DP1.state",				-- Donut Plains 1
 }
+_M.StateNo = 2
+
+_M.WhichState = _M.State[_M.StateNo]
 
 _M.NeatConfig = {
-Filename = _M.PoolDir .. _M.State[1],
+Filename = _M.PoolDir .. _M.State[_M.StateNo],
 Population = 300,
 DeltaDisjoint = 2.0,
 DeltaWeights = 0.4,
