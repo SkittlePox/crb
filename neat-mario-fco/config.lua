@@ -19,7 +19,7 @@ _M.WhichState = _M.State[_M.StateNo]
 
 _M.NeatConfig = {
 Filename = _M.PoolDir .. _M.State[_M.StateNo],
-Population = 300,
+Population = 100,
 DeltaDisjoint = 2.0,
 DeltaWeights = 0.4,
 DeltaThreshold = 1.0,

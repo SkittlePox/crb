@@ -1074,23 +1074,29 @@ while true do
 	joypad.set(controller)
 
 	game.getPositions()
+	
 	if marioX > rightmost then
 		rightmost = marioX
 		timeout = config.NeatConfig.TimeoutConstant
 	end
 
 
-	if memory.read_s8(0x0071) == 0x02 or memory.read_s8(0x0071) == 0x03 or memory.read_s8(0x0071) == 0x04 then
+	if memory.read_s8(0x0071) == 0x02
+		or memory.read_s8(0x0071) == 0x03
+		or memory.read_s8(0x0071) == 0x04 then
 		memory.write_s8(0x0071, 0x00)
 	end
 
 	--0019 is powerup status (0)
 
 	timeout = timeout - 1
-
 	local timeoutBonus = pool.currentFrame / 4
-	-- If mario dies:
-	if timeout + timeoutBonus <= 0 or memory.read_s8(0x0071) == 0x09 or memory.read_s8(0x0DD5) == 0x01 then
+
+	-- If mario dies or wins level
+	if timeout + timeoutBonus <= 0
+		or memory.read_s8(0x0071) == 0x09
+		or memory.read_s8(0x0DD5) == 0x01 then
+
 		if tdata ~= nil and io.type(tdata) == "file" then
 			tdata:close()
 		end

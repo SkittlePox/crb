@@ -54,10 +54,10 @@ function _M.getSprites()
 	for slot=0,11 do
 		local status = memory.readbyte(0x14C8+slot)
 		if status ~= 0 then
-            console.writeline(memory.readbyte(0x9E+slot))
+      spritenum = memory.readbyte(0x9E+slot)
 			spritex = memory.readbyte(0xE4+slot) + memory.readbyte(0x14E0+slot)*256
 			spritey = memory.readbyte(0xD8+slot) + memory.readbyte(0x14D4+slot)*256
-			sprites[#sprites+1] = {["x"]=spritex, ["y"]=spritey}
+			sprites[#sprites+1] = {["x"]=spritex, ["y"]=spritey, ["num"]=spritenum}
 		end
 	end
 
@@ -98,7 +98,14 @@ function _M.getInputs()
 			for i = 1,#sprites do
 				distx = math.abs(sprites[i]["x"] - (marioX+dx))
 				disty = math.abs(sprites[i]["y"] - (marioY+dy))
-				if distx <= 8 and disty <= 8 then
+				if distx <= 8 and disty <= 8
+				and sprites[i]["num"] ~= 0x74
+				and sprites[i]["num"] ~= 0x75
+				and sprites[i]["num"] ~= 0x76
+				and sprites[i]["num"] ~= 0x77
+				and sprites[i]["num"] ~= 0x78
+				and sprites[i]["num"] ~= 0x7B
+				and sprites[i]["num"] ~= 0xC7 then
 					inputs[#inputs] = -1
 				end
 			end
