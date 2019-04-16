@@ -10,9 +10,8 @@ _M.PoolDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/pool/"
 	Rearrange for other savestates. (will be redone soon)
 --]]
 _M.State = {
+      "YI2.state",				-- Yoshi's Island 2 TO BE RUN ON TRAINING ROM ONLY
  			"DP1.state",				-- Donut Plains 1
-			"YI1.state",				-- Yoshi's Island 1
-			"YI2.state",				-- Yoshi's Island 2
 }
 
 _M.NeatConfig = {

@@ -1089,38 +1089,27 @@ while true do
 		end
 	end
 
+	if memory.read_s8(0x0071) == 0x02 or memory.read_s8(0x0071) == 0x03 or memory.read_s8(0x0071) == 0x04 then
+		memory.write_s8(0x0071, 0x00)
+	end
+
+	--0019 is powerup status (0)
+
 	if hitTimer == 0 then
 		checkMarioCollision = true
 	end
-
-	-- check address 7E0071 for death animation
-	-- if memory.read_s8(0x0071) == 0x09 then
-	-- 	console.writeline("He died")
-	-- end
 
 	timeout = timeout - 1
 
 	local timeoutBonus = pool.currentFrame / 4
 	-- If mario dies:
-	if timeout + timeoutBonus <= 0 or memory.read_s8(0x0071) == 0x09 then
+	if timeout + timeoutBonus <= 0 or memory.read_s8(0x0071) == 0x09 or memory.read_s8(0x0DD5) == 0x01 then
 		if tdata ~= nil and io.type(tdata) == "file" then
 			tdata:close()
 		end
-		-- local coins = game.getCoins() - startCoins
-		-- local score = game.getScore() - startScore
 
-		-- console.writeline("Coins: " .. coins .. " score: " .. score)
-
-		-- local coinScoreFitness = (coins * 50) + (score * 0.2)
-		-- if (coins + score) > 0 then
-		-- 	console.writeline("Coins and Score added " .. coinScoreFitness .. " fitness")
-		-- end
-
-		-- local hitPenalty = marioHitCounter * 200
-
-		-- local fitness = coinScoreFitness - hitPenalty + rightmost - pool.currentFrame / 2
 		local fitness = rightmost - pool.currentFrame / 2
-		if rightmost > 4816 then
+		if memory.read_s8(0x0DD5) == 0x01 then
 			fitness = fitness + 1000
 			console.writeline("!!!!!!Beat level!!!!!!!")
 		end
