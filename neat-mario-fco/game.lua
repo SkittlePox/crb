@@ -2,133 +2,133 @@
 config = require "config"
 local _M = {}
 function _M.getPositions()
-	marioX = memory.read_s16_le(0x94)
-	marioY = memory.read_s16_le(0x96)
+    marioX = memory.read_s16_le(0x94)
+    marioY = memory.read_s16_le(0x96)
 
-	local layer1x = memory.read_s16_le(0x1A);
-	local layer1y = memory.read_s16_le(0x1C);
+    local layer1x = memory.read_s16_le(0x1A);
+    local layer1y = memory.read_s16_le(0x1C);
 
-	_M.screenX = marioX-layer1x
-	_M.screenY = marioY-layer1y
+    _M.screenX = marioX - layer1x
+    _M.screenY = marioY - layer1y
 end
 
 function _M.getCoins()
-	local coins = memory.readbyte(0x0DBF)
-	return coins
+    local coins = memory.readbyte(0x0DBF)
+    return coins
 end
 
 function _M.getScore()
-	local scoreLeft = memory.read_s16_le(0x0F34)
-	local scoreRight = memory.read_s16_le(0x0F36)
-	local score = ( scoreLeft * 10 ) + scoreRight
-	return score
+    local scoreLeft = memory.read_s16_le(0x0F34)
+    local scoreRight = memory.read_s16_le(0x0F36)
+    local score = ( scoreLeft * 10 ) + scoreRight
+    return score
 end
 
 function _M.getMarioHit(alreadyHit)
-	local timer = memory.read_s16_le(0x1497)
-	if timer > 0 then
-		if alreadyHit == false then
-			return true
-		else
-			return false
-		end
-	else
-		return false
-	end
+    local timer = memory.read_s16_le(0x1497)
+    if timer > 0 then
+        if alreadyHit == false then
+            return true
+        else
+            return false
+        end
+    else
+        return false
+    end
 end
 
 function _M.getMarioHitTimer()
-	local timer = memory.read_s16_le(0x1497)
-	return timer
+    local timer = memory.read_s16_le(0x1497)
+    return timer
 end
 
 function _M.getTile(dx, dy)
-	x = math.floor((marioX+dx+8)/16)
-	y = math.floor((marioY+dy)/16)
+    x = math.floor((marioX + dx + 8) / 16)
+    y = math.floor((marioY + dy) / 16)
 
-	return memory.readbyte(0x1C800 + math.floor(x/0x10)*0x1B0 + y*0x10 + x%0x10)
+    return memory.readbyte(0x1C800 + math.floor(x / 0x10) * 0x1B0 + y * 0x10 + x%0x10)
 end
 
 function _M.getSprites()
-	local sprites = {}
-	for slot=0,11 do
-		local status = memory.readbyte(0x14C8+slot)
-		if status ~= 0 then
-      spritenum = memory.readbyte(0x9E+slot)
-			spritex = memory.readbyte(0xE4+slot) + memory.readbyte(0x14E0+slot)*256
-			spritey = memory.readbyte(0xD8+slot) + memory.readbyte(0x14D4+slot)*256
-			sprites[#sprites+1] = {["x"]=spritex, ["y"]=spritey, ["num"]=spritenum}
-		end
-	end
+    local sprites = {}
+    for slot = 0, 11 do
+        local status = memory.readbyte(0x14C8 + slot)
+        if status ~= 0 then
+            spritenum = memory.readbyte(0x9E + slot)
+            spritex = memory.readbyte(0xE4 + slot) + memory.readbyte(0x14E0 + slot) * 256
+            spritey = memory.readbyte(0xD8 + slot) + memory.readbyte(0x14D4 + slot) * 256
+            sprites[#sprites + 1] = {["x"] = spritex, ["y"] = spritey, ["num"] = spritenum}
+        end
+    end
 
-	return sprites
+    return sprites
 end
 
 function _M.getExtendedSprites()
-	local extended = {}
-	for slot=0,11 do
-		local number = memory.readbyte(0x170B+slot)
-		if number ~= 0 then
-			spritex = memory.readbyte(0x171F+slot) + memory.readbyte(0x1733+slot)*256
-			spritey = memory.readbyte(0x1715+slot) + memory.readbyte(0x1729+slot)*256
-			extended[#extended+1] = {["x"]=spritex, ["y"]=spritey}
-		end
-	end
+    local extended = {}
+    for slot = 0, 11 do
+        local number = memory.readbyte(0x170B + slot)
+        if number ~= 0 then
+            spritex = memory.readbyte(0x171F + slot) + memory.readbyte(0x1733 + slot) * 256
+            spritey = memory.readbyte(0x1715 + slot) + memory.readbyte(0x1729 + slot) * 256
+            extended[#extended + 1] = {["x"] = spritex, ["y"] = spritey}
+        end
+    end
 
-	return extended
+    return extended
 end
 
 function _M.getInputs()
-	_M.getPositions()
+    _M.getPositions()
 
-	sprites = _M.getSprites()
-	extended = _M.getExtendedSprites()
+    sprites = _M.getSprites()
+    extended = _M.getExtendedSprites()
 
-	local inputs = {}
+    local inputs = {}
 
-	for dy=-config.BoxRadius*16,config.BoxRadius*16,16 do
-		for dx=-config.BoxRadius*16,config.BoxRadius*16,16 do
-			inputs[#inputs+1] = 0
+    for dy = -config.BoxRadius * 16, config.BoxRadius * 16, 16 do
+        for dx = -config.BoxRadius * 16, config.BoxRadius * 16, 16 do
+            inputs[#inputs + 1] = 0
 
-			tile = _M.getTile(dx, dy)
-			if tile == 1 and marioY+dy < 0x1B0 then
-				inputs[#inputs] = 1
-			end
+            tile = _M.getTile(dx, dy)
+            if tile == 1 and marioY + dy < 0x1B0 then
+                inputs[#inputs] = 1
+            end
 
-			for i = 1,#sprites do
-				distx = math.abs(sprites[i]["x"] - (marioX+dx))
-				disty = math.abs(sprites[i]["y"] - (marioY+dy))
-				if distx <= 8 and disty <= 8
-				and sprites[i]["num"] ~= 0x74
-				and sprites[i]["num"] ~= 0x75
-				and sprites[i]["num"] ~= 0x76
-				and sprites[i]["num"] ~= 0x77
-				and sprites[i]["num"] ~= 0x78
-				and sprites[i]["num"] ~= 0x7B
-				and sprites[i]["num"] ~= 0xC7 then
-					inputs[#inputs] = -1
-				end
-			end
+            for i = 1, #sprites do
+                distx = math.abs(sprites[i]["x"] - (marioX + dx))
+                disty = math.abs(sprites[i]["y"] - (marioY + dy))
+                if distx <= 8 and disty <= 8
+                and sprites[i]["num"] ~= 0x74
+                and sprites[i]["num"] ~= 0x75
+                and sprites[i]["num"] ~= 0x76
+                and sprites[i]["num"] ~= 0x77
+                and sprites[i]["num"] ~= 0x78
+                and sprites[i]["num"] ~= 0x7B
+                and sprites[i]["num"] ~= 0xC7 then
+                    inputs[#inputs] = -1
+                end
+            end
 
-			for i = 1,#extended do
-				distx = math.abs(extended[i]["x"] - (marioX+dx))
-				disty = math.abs(extended[i]["y"] - (marioY+dy))
-				if distx < 8 and disty < 8 then
-					inputs[#inputs] = -1
-				end
-			end
-		end
-	end
+            for i = 1, #extended do
+                distx = math.abs(extended[i]["x"] - (marioX + dx))
+                disty = math.abs(extended[i]["y"] - (marioY + dy))
+                if distx < 8 and disty < 8 then
+                    inputs[#inputs] = -1
+                end
+            end
+        end
+    end
 
-	return inputs
+    return inputs
 end
 
 function _M.clearJoypad()
-	controller = {}
-	for b = 1,#config.ButtonNames do
-		controller["P1 " .. config.ButtonNames[b]] = false
-	end
-	joypad.set(controller)
+    controller = {}
+    for b = 1, #config.ButtonNames do
+        controller["P1 " .. config.ButtonNames[b]] = false
+    end
+    joypad.set(controller)
 end
 
 return _M
