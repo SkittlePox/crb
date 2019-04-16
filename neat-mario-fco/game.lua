@@ -54,6 +54,7 @@ function _M.getSprites()
 	for slot=0,11 do
 		local status = memory.readbyte(0x14C8+slot)
 		if status ~= 0 then
+            console.writeline(memory.readbyte(0x9E+slot))
 			spritex = memory.readbyte(0xE4+slot) + memory.readbyte(0x14E0+slot)*256
 			spritey = memory.readbyte(0xD8+slot) + memory.readbyte(0x14D4+slot)*256
 			sprites[#sprites+1] = {["x"]=spritex, ["y"]=spritey}
