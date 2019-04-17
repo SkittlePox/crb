@@ -1024,7 +1024,7 @@ function table_to_string(tbl)
 end
 
 function record_agent(generation, species, genome)
-	local file = io.open(config.PoolDir..config.WhichState..".gen"..generation..".wins", "w")
+	local file = io.open(config.PoolDir..config.WhichState..".gen"..generation..".wins", "a")
 	file:write(species.."\n")
 	file:write(genome.."\n")
 	file:close()
@@ -1055,7 +1055,7 @@ saveButton = forms.button(form, "Save", savePool, 5, 102)
 loadButton = forms.button(form, "Load", loadPool, 80, 102)
 playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
 
-saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 190, 25, nil, 5, 148)
+saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 290, 25, nil, 5, 148)
 saveLoadLabel = forms.label(form, "Save/Load:", 5, 129)
 
 --To extract training data
@@ -1112,7 +1112,7 @@ while true do
             if memory.read_s8(0x0DD5) == 0x01 then
                 fitness = fitness + 1000
                 console.writeline("!!!!!!Beat level!!!!!!!")
-								record_agent(pool.generation, pool.currentSpecies, pool.currentGenome)
+                record_agent(pool.generation, pool.currentSpecies, pool.currentGenome)
             end
             if fitness == 0 then
                 fitness = -1
@@ -1145,7 +1145,7 @@ while true do
             end
         end
 
-        forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2 - (timeout + timeoutBonus) * 2 / 3))
+        forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2))
         forms.settext(GenerationLabel, "Generation: " .. pool.generation)
         forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
         forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)

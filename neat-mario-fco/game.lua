@@ -71,7 +71,7 @@ function _M.getExtendedSprites()
         if number ~= 0 then
             spritex = memory.readbyte(0x171F + slot) + memory.readbyte(0x1733 + slot) * 256
             spritey = memory.readbyte(0x1715 + slot) + memory.readbyte(0x1729 + slot) * 256
-            extended[#extended + 1] = {["x"] = spritex, ["y"] = spritey}
+            extended[#extended + 1] = {["x"] = spritex, ["y"] = spritey, ["num"] = number}
         end
     end
 
@@ -105,7 +105,9 @@ function _M.getInputs()
                 and sprites[i]["num"] ~= 0x77
                 and sprites[i]["num"] ~= 0x78
                 and sprites[i]["num"] ~= 0x7B
+                and sprites[i]["num"] ~= 0x4C
                 and sprites[i]["num"] ~= 0xC7 then
+                    console.writeline(sprites[i]["num"])
                     inputs[#inputs] = -1
                 end
             end
@@ -113,7 +115,8 @@ function _M.getInputs()
             for i = 1, #extended do
                 distx = math.abs(extended[i]["x"] - (marioX + dx))
                 disty = math.abs(extended[i]["y"] - (marioY + dy))
-                if distx < 8 and disty < 8 then
+                if distx < 8 and disty < 8
+                and extended[i]["num"] ~= 0x10 then
                     inputs[#inputs] = -1
                 end
             end
