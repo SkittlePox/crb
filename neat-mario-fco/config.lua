@@ -13,7 +13,7 @@ _M.State = {
     "YI2.state", -- Yoshi's Island 2 TO BE RUN ON TRAINING ROM ONLY
     "DP1.state", -- Donut Plains 1
 }
-_M.StateNo = 2
+_M.StateNo = 1
 
 _M.WhichState = _M.State[_M.StateNo]
 

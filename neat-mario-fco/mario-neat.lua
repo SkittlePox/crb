@@ -1023,6 +1023,13 @@ function table_to_string(tbl)
     return result.."}"
 end
 
+function record_agent(generation, species, genome)
+	local file = io.open(config.PoolDir..config.WhichState..".gen"..generation..".wins", "w")
+	file:write(species.."\n")
+	file:write(genome.."\n")
+	file:close()
+end
+
 --Main Function Below
 
 writeFile(config.PoolDir.."temp.pool")
@@ -1105,6 +1112,7 @@ while true do
             if memory.read_s8(0x0DD5) == 0x01 then
                 fitness = fitness + 1000
                 console.writeline("!!!!!!Beat level!!!!!!!")
+								record_agent(pool.generation, pool.currentSpecies, pool.currentGenome)
             end
             if fitness == 0 then
                 fitness = -1
