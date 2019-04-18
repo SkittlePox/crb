@@ -620,8 +620,7 @@ function newGeneration()
 
     pool.generation = pool.generation + 1
 
-    --writeFile("backup." .. pool.generation .. "." .. forms.gettext(saveLoadFile))
-    writeFile(forms.gettext(saveLoadFile) .. ".gen" .. pool.generation .. ".pool")
+    writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
 end
 
 function initializePool()
@@ -876,7 +875,7 @@ function writeFile(filename)
 end
 
 function savePool()
-    local filename = forms.gettext(saveLoadFile)
+    local filename = config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool"
     print(filename)
     writeFile(filename)
 end
@@ -1092,9 +1091,8 @@ while true do
         or memory.read_s8(0x0071) == 0x03
         or memory.read_s8(0x0071) == 0x04 then
             memory.write_s8(0x0071, 0x00)
+            memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
         end
-
-        --0019 is powerup status (0)
 
         timeout = timeout - 1
         local timeoutBonus = pool.currentFrame / 4
@@ -1121,8 +1119,7 @@ while true do
 
             if fitness > pool.maxFitness then
                 pool.maxFitness = fitness
-                --writeFile("backup." .. pool.generation .. "." .. forms.gettext(saveLoadFile))
-                writeFile(forms.gettext(saveLoadFile) .. ".gen" .. pool.generation .. ".pool")
+                writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
             end
 
             console.writeline("Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
