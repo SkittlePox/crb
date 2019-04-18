@@ -5,10 +5,6 @@ _M.BizhawkDir = "C:/Users/Benjamin/Documents/SNES Shit/BizHawk-2.2.2/"
 _M.StateDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/state/"
 _M.PoolDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/pool/"
 
---[[
-	At the moment the first in list will get loaded.
-	Rearrange for other savestates. (will be redone soon)
---]]
 _M.State = {
     "YI2.state", -- Yoshi's Island 2 TO BE RUN ON TRAINING ROM ONLY
     "DP1.state", -- Donut Plains 1

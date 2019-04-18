@@ -12,6 +12,7 @@ function newInnovation()
     return pool.innovation
 end
 
+-- Pool object
 function newPool()
     local pool = {}
     pool.species = {}
@@ -25,6 +26,7 @@ function newPool()
     return pool
 end
 
+-- Species object
 function newSpecies()
     local species = {}
     species.topFitness = 0
@@ -635,7 +637,12 @@ function initializePool()
 end
 
 function initializeRun()
-    savestate.load(config.NeatConfig.Filename);
+    if forms.ischecked(altsimCheckbox) then
+        savestate.load(forms.gettext(altsimFile))
+    else
+        savestate.load(config.NeatConfig.Filename);
+    end
+
     rightmost = 0
     pool.currentFrame = 0
     timeout = config.NeatConfig.TimeoutConstant
@@ -875,7 +882,7 @@ function writeFile(filename)
 end
 
 function savePool()
-    local filename = config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool"
+    local filename = config.PoolDir .. config.WhichState .. ".pool.gen" .. pool.generation .. ".pool"
     print(filename)
     writeFile(filename)
 end
@@ -892,6 +899,7 @@ function mysplit(inputstr, sep)
     return t
 end
 
+-- Load function
 function loadFile(filename)
     print("Loading pool from " .. filename)
     local file = io.open(filename, "r")
@@ -964,7 +972,6 @@ end
 
 function loadPool()
     filename = forms.openfile("DP1.state.pool", config.PoolDir)
-    --local filename = forms.gettext(saveLoadFile)
     forms.settext(saveLoadFile, filename)
     loadFile(filename)
 end
@@ -1023,10 +1030,10 @@ function table_to_string(tbl)
 end
 
 function record_agent(generation, species, genome)
-	local file = io.open(config.PoolDir..config.WhichState..".gen"..generation..".wins", "a")
-	file:write(species.."\n")
-	file:write(genome.."\n")
-	file:close()
+    local file = io.open(config.PoolDir..config.WhichState..".gen"..generation..".wins", "a")
+    file:write(species.."\n")
+    file:write(genome.."\n")
+    file:close()
 end
 
 --Main Function Below
@@ -1054,8 +1061,11 @@ saveButton = forms.button(form, "Save", savePool, 5, 102)
 loadButton = forms.button(form, "Load", loadPool, 80, 102)
 playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
 
-saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 290, 25, nil, 5, 148)
-saveLoadLabel = forms.label(form, "Save/Load:", 5, 129)
+saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 350, 25, nil, 5, 148)
+saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
+
+altsimCheckbox = forms.checkbox(form, "Altername Environment", 5, 160)
+altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 180)
 
 --To extract training data
 tdata = io.open("tdata.txt", "w")
