@@ -107,7 +107,6 @@ function _M.getInputs()
                 and sprites[i]["num"] ~= 0x7B
                 and sprites[i]["num"] ~= 0x4C
                 and sprites[i]["num"] ~= 0xC7 then
-                    console.writeline(sprites[i]["num"])
                     inputs[#inputs] = -1
                 end
             end

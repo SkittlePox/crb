@@ -22,6 +22,7 @@ function newPool()
     pool.currentGenome = 1
     pool.currentFrame = 0
     pool.maxFitness = 0
+    pool.newgen = 0
 
     return pool
 end
@@ -592,6 +593,7 @@ function addToSpecies(child)
 end
 
 function newGeneration()
+    pool.newgen = 0
     cullSpecies(false) -- Cull the bottom half of each species
     rankGlobally()
     removeStaleSpecies()
@@ -688,8 +690,9 @@ function nextGenome()
         pool.currentGenome = 1
         pool.currentSpecies = pool.currentSpecies + 1
         if pool.currentSpecies > #pool.species then
-            newGeneration()
+            console.writeline("Generation " .. pool.generation .. " Completed")
             pool.currentSpecies = 1
+            pool.newgen = 1
         end
     end
 end
@@ -954,6 +957,9 @@ function loadFile(filename)
 
     while fitnessAlreadyMeasured() do
         nextGenome()
+        if pool.newgen == 1 then
+            newGeneration()
+        end
     end
     initializeRun()
     pool.currentFrame = pool.currentFrame + 1
@@ -1064,8 +1070,8 @@ playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
 saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 350, 25, nil, 5, 148)
 saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 
-altsimCheckbox = forms.checkbox(form, "Altername Environment", 5, 160)
-altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 180)
+altsimCheckbox = forms.checkbox(form, "Alt Environment", 5, 170)
+altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 200)
 
 --To extract training data
 tdata = io.open("tdata.txt", "w")
@@ -1117,14 +1123,17 @@ while true do
             end
 
             local fitness = rightmost - pool.currentFrame / 2
+            -- mario wins level
             if memory.read_s8(0x0DD5) == 0x01 then
                 fitness = fitness + 1000
                 console.writeline("!!!!!!Beat level!!!!!!!")
                 record_agent(pool.generation, pool.currentSpecies, pool.currentGenome)
             end
+
             if fitness == 0 then
                 fitness = -1
             end
+
             genome.fitness = fitness
 
             if fitness > pool.maxFitness then
@@ -1137,6 +1146,9 @@ while true do
             pool.currentGenome = 1
             while fitnessAlreadyMeasured() do
                 nextGenome()
+                if pool.newgen == 1 then
+                    newGeneration()
+                end
             end
             initializeRun()
         end
