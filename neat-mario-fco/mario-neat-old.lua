@@ -114,8 +114,6 @@ function newNeuron()
     return neuron
 end
 
--- START NEAT FUNCTIONS --------------------------------------------------------
-
 function generateNetwork(genome)
     local network = {}
     network.neurons = {}
@@ -629,7 +627,43 @@ function newGeneration()
     writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
 end
 
-function evaluateCurrent(species, genome)
+function initializePool()
+    pool = newPool()
+
+    for i = 1, config.NeatConfig.Population do
+        basic = basicGenome()
+        addToSpecies(basic)
+    end
+
+    initializeRun(false)
+end
+
+function initializeRun(alt)
+    if alt then
+        savestate.load(forms.gettext(altsimFile))
+    else
+        savestate.load(config.NeatConfig.Filename);
+    end
+
+    rightmost = 0
+    pool.currentFrame = 0
+    timeout = config.NeatConfig.TimeoutConstant
+    game.clearJoypad()
+    startCoins = game.getCoins()
+    startScore = game.getScore()
+    checkMarioCollision = true
+    marioHitCounter = 0
+
+    local species = pool.species[pool.currentSpecies]
+    local genome = species.genomes[pool.currentGenome]
+    generateNetwork(genome)
+    evaluateCurrent()
+end
+
+function evaluateCurrent()
+    local species = pool.species[pool.currentSpecies]
+    local genome = species.genomes[pool.currentGenome]
+
     inputs = game.getInputs()
     controller = evaluateNetwork(genome.network, inputs)
 
@@ -645,16 +679,10 @@ function evaluateCurrent(species, genome)
     joypad.set(controller)
 end
 
-function initializePool()
-    pool = newPool()
-
-    for i = 1, config.NeatConfig.Population do
-        basic = basicGenome()
-        addToSpecies(basic)
-    end
-
-    initializeRun(config.NeatConfig.Filename)
+if pool == nil then
+    initializePool()
 end
+
 
 function nextGenome()
     pool.currentGenome = pool.currentGenome + 1
@@ -676,9 +704,11 @@ function fitnessAlreadyMeasured()
     return genome.fitness ~= 0
 end
 
--- END NEAT FUNCTIONS ----------------------------------------------------------
+form = forms.newform(500, 500, "Mario-Neat")
+netPicture = forms.pictureBox(form, 5, 250, 470, 200)
 
--- START GRAPHICS --------------------------------------------------------------
+
+--int forms.pictureBox(int formhandle, [int? x = null], [int? y = null], [int? width = null], [int? height = null])
 
 function displayGenome(genome)
     forms.clear(netPicture, 0x80808080)
@@ -714,6 +744,7 @@ function displayGenome(genome)
         else
             color = 0xFF000000
         end
+        --gui.drawText(223, 24+8*o, config.ButtonNames[o], color, 9)
         forms.drawText(netPicture, 223, 24 + 8 * o, config.ButtonNames[o], color, 9)
     end
 
@@ -764,7 +795,9 @@ function displayGenome(genome)
         end
     end
 
+    --gui.drawBox(50-config.BoxRadius*5-3,70-config.BoxRadius*5-3,50+config.BoxRadius*5+2,70+config.BoxRadius*5+2,0xFF000000, 0x80808080)
     forms.drawBox(netPicture, 50 - config.BoxRadius * 5 - 3, 70 - config.BoxRadius * 5 - 3, 50 + config.BoxRadius * 5 + 2, 70 + config.BoxRadius * 5 + 2, 0xFF000000, 0x80808080)
+    --oid forms.drawBox(int componenthandle, int x, int y, int x2, int y2, [color? line = null], [color? background = null])
     for n, cell in pairs(cells) do
         if n > Inputs or cell.value ~= 0 then
             local color = math.floor((cell.value + 1) / 2 * 256)
@@ -776,6 +809,7 @@ function displayGenome(genome)
             end
             color = opacity + color * 0x10000 + color * 0x100 + color
             forms.drawBox(netPicture, cell.x - 2, cell.y - 2, cell.x + 2, cell.y + 2, opacity, color)
+            --gui.drawBox(cell.x-2,cell.y-2,cell.x+2,cell.y+2,opacity,color)
         end
     end
     for _, gene in pairs(genome.genes) do
@@ -793,39 +827,26 @@ function displayGenome(genome)
             else
                 color = opacity + 0x800000 + 0x100 * color
             end
+            --gui.drawLine(c1.x+1, c1.y, c2.x-3, c2.y, color)
             forms.drawLine(netPicture, c1.x + 1, c1.y, c2.x - 3, c2.y, color)
         end
     end
 
+    --gui.drawBox(49,71,51,78,0x00000000,0x80FF0000)
     forms.drawBox(netPicture, 49, 71, 51, 78, 0x00000000, 0x80FF0000)
+    --if forms.ischecked(showMutationRates) then
     local pos = 100
     for mutation, rate in pairs(genome.mutationRates) do
+        --gui.drawText(100, pos, mutation .. ": " .. rate, 0xFF000000, 10)
         forms.drawText(netPicture, 100, pos, mutation .. ": " .. rate, 0xFF000000, 10)
+        --forms.drawText(pictureBox,400,pos, mutation .. ": " .. rate)
+
+        --void forms.drawText(int componenthandle, int x, int y, string message, [color? forecolor = null], [color? backcolor = null], [int? fontsize = null], [string fontfamily = null], [string fontstyle = null], [string horizalign = null], [string vertalign = null])
+
         pos = pos + 8
     end
+    --end
     forms.refresh(netPicture)
-end
-
--- END GRAPHICS ----------------------------------------------------------------
-
--- START META ------------------------------------------------------------------
-
-function initializeRun(filename)
-    savestate.load(filename);
-
-    rightmost = 0
-    pool.currentFrame = 0
-    timeout = config.NeatConfig.TimeoutConstant
-    game.clearJoypad()
-    startCoins = game.getCoins()
-    startScore = game.getScore()
-    checkMarioCollision = true
-    marioHitCounter = 0
-
-    local species = pool.species[pool.currentSpecies]
-    local genome = species.genomes[pool.currentGenome]
-    generateNetwork(genome)
-    evaluateCurrent(species, genome)
 end
 
 function writeFile(filename)
@@ -882,7 +903,7 @@ function mysplit(inputstr, sep)
 end
 
 -- Load function
-function loadPoolFile(filename)
+function loadFile(filename)
     print("Loading pool from " .. filename)
     local file = io.open(filename, "r")
     pool = newPool()
@@ -934,16 +955,15 @@ function loadPoolFile(filename)
     end
     file:close()
 
-    print("Pool loaded.")
-
     while fitnessAlreadyMeasured() do
         nextGenome()
         if pool.newgen == 1 then
             newGeneration()
         end
     end
-    initializeRun(config.NeatConfig.Filename)
+    initializeRun(false)
     pool.currentFrame = pool.currentFrame + 1
+    print("Pool loaded.")
 end
 
 function flipState()
@@ -959,7 +979,13 @@ end
 function loadPool()
     filename = forms.openfile("DP1.state.pool", config.PoolDir)
     forms.settext(saveLoadFile, filename)
-    loadPoolFile(filename)
+    loadFile(filename)
+end
+
+function loadAlt()
+    filename = forms.openfile("DP1.state.pool", config.PoolDir)
+    forms.settext(altsimFile, filename)
+    loadFile(filename)
 end
 
 function playTop()
@@ -979,9 +1005,40 @@ function playTop()
     pool.currentGenome = maxg
     pool.maxFitness = maxfitness
     forms.settext(MaxLabel, "Max Fitness: " .. math.floor(pool.maxFitness))
-    initializeRun(config.NeatConfig.Filename)
+    initializeRun(false)
     pool.currentFrame = pool.currentFrame + 1
     return
+end
+
+function onExit()
+    forms.destroy(form)
+end
+
+-- Additional functions
+
+function table_to_string(tbl)
+    local result = "{"
+    for k, v in pairs(tbl) do
+        -- Check the key type (ignore any numerical keys - assume its an array)
+        if type(k) == "string" then
+            result = result.."[\""..k.."\"]".."="
+        end
+
+        -- Check the value type
+        if type(v) == "table" then
+            result = result..table_to_string(v)
+        elseif type(v) == "boolean" then
+            result = result..tostring(v)
+        else
+            result = result.."\""..v.."\""
+        end
+        result = result..","
+    end
+    -- Remove leading commas from the result
+    if result ~= "" then
+        result = result:sub(1, result:len() - 1)
+    end
+    return result.."}"
 end
 
 function record_agent(generation, species, genome)
@@ -991,33 +1048,10 @@ function record_agent(generation, species, genome)
     file:close()
 end
 
--- END META --------------------------------------------------------------------
-
--- START TESTING FUNCTIONS ----------------------------------------------------
-
-function flipTest()
-    if config.Testing == true then
-        config.Testing = false
-        forms.settext(testButton, "Training")
-    else
-        config.Testing = true
-        forms.settext(testButton, "Testing")
-    end
-end
-
--- MAIN ------------------------------------------------------------------------
-if pool == nil then
-    initializePool()
-end
-
-form = forms.newform(500, 500, "Mario-Neat")
-netPicture = forms.pictureBox(form, 5, 250, 470, 200)
-
-function onExit()
-    forms.destroy(form)
-end
+--Main Function Below
 
 writeFile(config.PoolDir.."temp.pool")
+
 event.onexit(onExit)
 
 GenerationLabel = forms.label(form, "Generation: " .. pool.generation, 5, 5)
@@ -1028,12 +1062,17 @@ MeasuredLabel = forms.label(form, "Measured: " .. "", 330, 5)
 FitnessLabel = forms.label(form, "Fitness: " .. "", 5, 30)
 MaxLabel = forms.label(form, "Maximum: " .. "", 130, 30)
 
-startButton = forms.button(form, "Start", flipState, 155, 102)
-testButton = forms.button(form, "Training", flipTest, 5, 60)
+CoinsLabel = forms.label(form, "Coins: " .. "", 5, 65)
+ScoreLabel = forms.label(form, "Score: " .. "", 130, 65)
+DmgLabel = forms.label(form, "Damage: " .. "", 230, 65)
 
+startButton = forms.button(form, "Start", flipState, 155, 102)
+
+restartButton = forms.button(form, "Restart", initializePool, 155, 102)
 saveButton = forms.button(form, "Save", savePool, 5, 102)
 loadButton = forms.button(form, "Load", loadPool, 80, 102)
 playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
+loadAltButton = forms.button(form, "Load Alt", loadAlt, 305, 102)
 
 saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 350, 25, nil, 5, 148)
 saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
@@ -1041,104 +1080,111 @@ saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 altsimCheckbox = forms.checkbox(form, "Alt Environment", 5, 170)
 altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 200)
 
+--To extract training data
+tdata = io.open("tdata.txt", "w")
+
 while true do
+
     if config.Running == true then
-        -- If NEAT is training
-        if config.Testing == false then
-            local species = pool.species[pool.currentSpecies]
-            local genome = species.genomes[pool.currentGenome]
 
-            displayGenome(genome)
+        local species = pool.species[pool.currentSpecies]
+        local genome = species.genomes[pool.currentGenome]
 
-            if pool.currentFrame%5 == 0 then
-                evaluateCurrent(species, genome)
+        displayGenome(genome)
+
+        if pool.currentFrame%5 == 0 then
+            evaluateCurrent()
+            -- get input and controller from here
+            if tdata ~= nil and io.type(tdata) == "file" then
+                tdata:write(table_to_string(controller))
             end
-
-            joypad.set(controller)
-
-            game.getPositions()
-
-            if marioX > rightmost then
-                rightmost = marioX
-                timeout = config.NeatConfig.TimeoutConstant
-            end
-
-            -- Prevents Mario from reaching higher powerup state
-            if memory.read_s8(0x0071) == 0x02
-            or memory.read_s8(0x0071) == 0x03
-            or memory.read_s8(0x0071) == 0x04 then
-                console.writeline(memory.read_s8(0x1496)) -- animation timing check
-                memory.write_s8(0x0071, 0x00)
-                memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
-            elseif memory.read_s8(0x0019) ~= 0x00 then
-                memory.write_s8(0x0019, 0x00)
-            end
-
-            timeout = timeout - 1
-            local timeoutBonus = pool.currentFrame / 4
-
-            -- If mario dies or wins level
-            if timeout + timeoutBonus <= 0
-            or memory.read_s8(0x0071) == 0x09
-            or memory.read_s8(0x0DD5) == 0x01 then
-
-                local fitness = rightmost - pool.currentFrame / 2
-                -- mario wins level
-                if memory.read_s8(0x0DD5) == 0x01 then
-                    fitness = fitness + 1000
-                    console.writeline("!!!!!!Beat level!!!!!!!")
-                    record_agent(pool.generation, pool.currentSpecies, pool.currentGenome)
-                end
-
-                if fitness == 0 then
-                    fitness = -1
-                end
-
-                genome.fitness = fitness
-
-                if fitness > pool.maxFitness then
-                    pool.maxFitness = fitness
-                    writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
-                end
-
-                console.writeline("Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
-                pool.currentSpecies = 1
-                pool.currentGenome = 1
-
-                while fitnessAlreadyMeasured() do
-                    nextGenome()
-                    if pool.newgen == 1 then
-                        newGeneration()
-                    end
-                end
-                initializeRun(config.NeatConfig.Filename)
-            end
-
-            local measured = 0
-            local total = 0
-            for _, species in pairs(pool.species) do
-                for _, genome in pairs(species.genomes) do
-                    total = total + 1
-                    if genome.fitness ~= 0 then
-                        measured = measured + 1
-                    end
-                end
-            end
-
-            forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2))
-            forms.settext(GenerationLabel, "Generation: " .. pool.generation)
-            forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
-            forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)
-            forms.settext(MaxLabel, "Maximum: " .. math.floor(pool.maxFitness))
-            forms.settext(MeasuredLabel, "Measured: " .. math.floor(measured / total * 100) .. "%")
-
-            pool.currentFrame = pool.currentFrame + 1
         end
 
-        -- Testing function here
-        if config.Testing then
-            console.writeline("Running")
+        joypad.set(controller)
+
+        game.getPositions()
+
+        if marioX > rightmost then
+            rightmost = marioX
+            timeout = config.NeatConfig.TimeoutConstant
         end
+
+        -- Prevents Mario from reaching higher powerup state
+        if memory.read_s8(0x0071) == 0x02
+        or memory.read_s8(0x0071) == 0x03
+        or memory.read_s8(0x0071) == 0x04 then
+            console.writeline(memory.read_s8(0x1496)) -- animation timing check
+            memory.write_s8(0x0071, 0x00)
+            memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
+        elseif memory.read_s8(0x0019) ~= 0x00 then
+            memory.write_s8(0x0019, 0x00)
+        end
+
+        timeout = timeout - 1
+        local timeoutBonus = pool.currentFrame / 4
+
+        -- If mario dies or wins level
+        if timeout + timeoutBonus <= 0
+        or memory.read_s8(0x0071) == 0x09
+        or memory.read_s8(0x0DD5) == 0x01 then
+            -- for training data
+            if tdata ~= nil and io.type(tdata) == "file" then
+                tdata:close()
+            end
+
+            local fitness = rightmost - pool.currentFrame / 2
+            -- mario wins level
+            if memory.read_s8(0x0DD5) == 0x01 then
+                fitness = fitness + 1000
+                console.writeline("!!!!!!Beat level!!!!!!!")
+                record_agent(pool.generation, pool.currentSpecies, pool.currentGenome)
+            end
+
+            if fitness == 0 then
+                fitness = -1
+            end
+
+            genome.fitness = fitness
+
+            if fitness > pool.maxFitness then
+                pool.maxFitness = fitness
+                writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
+            end
+
+            console.writeline("Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
+            pool.currentSpecies = 1
+            pool.currentGenome = 1
+            while fitnessAlreadyMeasured() do
+                nextGenome()
+                if pool.newgen == 1 then
+                    newGeneration()
+                end
+            end
+            initializeRun(false)
+        end
+
+        local measured = 0
+        local total = 0
+        for _, species in pairs(pool.species) do
+            for _, genome in pairs(species.genomes) do
+                total = total + 1
+                if genome.fitness ~= 0 then
+                    measured = measured + 1
+                end
+            end
+        end
+
+        forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2))
+        forms.settext(GenerationLabel, "Generation: " .. pool.generation)
+        forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
+        forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)
+        forms.settext(MaxLabel, "Maximum: " .. math.floor(pool.maxFitness))
+        forms.settext(MeasuredLabel, "Measured: " .. math.floor(measured / total * 100) .. "%")
+        forms.settext(CoinsLabel, "Coins: " .. (game.getCoins() - startCoins))
+        forms.settext(ScoreLabel, "Score: " .. (game.getScore() - startScore))
+        forms.settext(DmgLabel, "Damage: " .. marioHitCounter)
+
+        pool.currentFrame = pool.currentFrame + 1
 
     end
     emu.frameadvance();
