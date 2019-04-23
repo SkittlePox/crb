@@ -1003,6 +1003,8 @@ function flipTest()
         config.Testing = true
         forms.settext(testButton, "Testing")
     end
+    config.Running = false
+    forms.settext(startButton, "Start")
 end
 
 -- MAIN ------------------------------------------------------------------------
@@ -1038,7 +1040,8 @@ playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
 saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 350, 25, nil, 5, 148)
 saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 
-altsimCheckbox = forms.checkbox(form, "Alt Environment", 5, 170)
+-- altsimCheckbox = forms.checkbox(form, "Alt Environment", 5, 170)
+altSimLabel = forms.label(form, "State File:", 5, 177)
 altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 200)
 
 while true do
