@@ -839,6 +839,7 @@ function writeFile(filename)
         file:write(#species.genomes .. "\n")
         for m, genome in pairs(species.genomes) do
             file:write(genome.fitness .. "\n")
+            -- console.writeline(genome.fitness)   --- Testing
             file:write(genome.maxneuron .. "\n")
             for mutation, rate in pairs(genome.mutationRates) do
                 file:write(mutation .. "\n")
@@ -955,6 +956,8 @@ function loadPoolFile(filename)
     file:close()
 
     print("Pool loaded.")
+    pool.currentSpecies = 1
+    pool.currentGenome = 1
 
     if config.Testing == false then
         while fitnessAlreadyMeasured() do
@@ -1003,6 +1006,8 @@ function loadPool()
 end
 
 function playTop()
+    console.writeline("Playing Top!")
+    resume = {pool.currentSpecies, pool.currentGenome}
     local maxfitness = 0
     local maxs, maxg
     for s, species in pairs(pool.species) do
@@ -1057,10 +1062,13 @@ end
 form = forms.newform(500, 500, "Mario-Neat")
 netPicture = forms.pictureBox(form, 5, 250, 470, 200)
 
-agentTable = {"A", "B", "C"}
+agentTable = {"Load Pool To Begin"}
+resume = nil
 
 function onExit()
     forms.destroy(form)
+    config.Running = false
+    config.Testing = false
 end
 
 writeFile(config.PoolDir.."temp.pool")
@@ -1116,7 +1124,8 @@ while true do
             if memory.read_s8(0x0071) == 0x02
             or memory.read_s8(0x0071) == 0x03
             or memory.read_s8(0x0071) == 0x04 then
-                console.writeline(memory.read_s8(0x1496)) -- animation timing check
+                -- console.writeline(memory.read_s8(0x1496)) -- animation timing check
+                memory.write_s8(0x1496, 0x00) -- should stop animation
                 memory.write_s8(0x0071, 0x00)
                 memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
             elseif memory.read_s8(0x0019) ~= 0x00 then
@@ -1133,7 +1142,7 @@ while true do
             timeout = timeout - 1
             local timeoutBonus = pool.currentFrame / 4
 
-            -- If mario dies or wins level
+            -- If mario dies or wins level or runs out of time
             if timeout + timeoutBonus <= 0
             or memory.read_s8(0x0071) == 0x09
             or memory.read_s8(0x0DD5) == 0x01 then
@@ -1154,16 +1163,30 @@ while true do
 
                 if fitness > pool.maxFitness then
                     pool.maxFitness = fitness
-                    writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
                 end
 
                 console.writeline("Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
-                pool.currentSpecies = 1
-                pool.currentGenome = 1
 
-                while fitnessAlreadyMeasured() do
+
+                -- pool.currentSpecies = 1
+                -- pool.currentGenome = 1
+                --
+                -- while fitnessAlreadyMeasured() do
+                --     console.writeline("Skipping "..pool.currentGenome)
+                --     nextGenome()
+                --     if pool.newgen == 1 then
+                --         newGeneration()
+                --     end
+                -- end
+                if resume ~= nil then
+                    pool.currentSpecies = resume[1]
+                    pool.currentGenome = resume[2]
+                    resume = nil
+                    console.writeline("Resuming Training")
+                else
                     nextGenome()
                     if pool.newgen == 1 then
+                        writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
                         newGeneration()
                     end
                 end
