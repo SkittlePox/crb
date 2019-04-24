@@ -881,15 +881,27 @@ function mysplit(inputstr, sep)
     return t
 end
 
+function addZeros(num, max)
+    local n = tostring(num)
+    local mlen = string.len(tostring(max))
+
+    while string.len(n) < mlen do
+        n = "0"..n
+    end
+    return n
+end
+
 -- Load function
 function loadPoolFile(filename)
     print("Loading pool from " .. filename)
+    agentTable = {}
     local file = io.open(filename, "r")
     pool = newPool()
     pool.generation = file:read("*number")
     pool.maxFitness = file:read("*number")
     forms.settext(MaxLabel, "Max Fitness: " .. math.floor(pool.maxFitness))
     local numSpecies = file:read("*number")
+    local index = 1
     for s = 1, numSpecies do
         local species = newSpecies()
         table.insert(pool.species, species)
@@ -900,6 +912,8 @@ function loadPoolFile(filename)
             local genome = newGenome()
             table.insert(species.genomes, genome)
             genome.fitness = file:read("*number")
+            agentTable[index] = "species: " .. addZeros(s, numSpecies) .. " genome: " .. tostring(g)
+            index = index + 1
             genome.maxneuron = file:read("*number")
             local line = file:read("*line")
             while line ~= "done" do
@@ -936,14 +950,17 @@ function loadPoolFile(filename)
 
     print("Pool loaded.")
 
-    while fitnessAlreadyMeasured() do
-        nextGenome()
-        if pool.newgen == 1 then
-            newGeneration()
+    if config.Testing == false then
+        while fitnessAlreadyMeasured() do
+            nextGenome()
+            if pool.newgen == 1 then
+                newGeneration()
+            end
         end
+        initializeRun(config.NeatConfig.Filename)
+        pool.currentFrame = pool.currentFrame + 1
     end
-    initializeRun(config.NeatConfig.Filename)
-    pool.currentFrame = pool.currentFrame + 1
+    forms.setdropdownitems(agentDropdown, agentTable)
 end
 
 function flipState()
@@ -1007,6 +1024,8 @@ function flipTest()
     forms.settext(startButton, "Start")
 end
 
+-- END TESTING FUNCTIONS -------------------------------------------------------
+
 -- MAIN ------------------------------------------------------------------------
 if pool == nil then
     initializePool()
@@ -1014,6 +1033,8 @@ end
 
 form = forms.newform(500, 500, "Mario-Neat")
 netPicture = forms.pictureBox(form, 5, 250, 470, 200)
+
+agentTable = {"A", "B", "C"}
 
 function onExit()
     forms.destroy(form)
@@ -1043,6 +1064,8 @@ saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 -- altsimCheckbox = forms.checkbox(form, "Alt Environment", 5, 170)
 altSimLabel = forms.label(form, "State File:", 5, 177)
 altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 200)
+
+agentDropdown = forms.dropdown(form, agentTable, 101, 61, 150, 5)
 
 while true do
     if config.Running == true then
@@ -1138,9 +1161,10 @@ while true do
             pool.currentFrame = pool.currentFrame + 1
         end
 
-        -- Testing function here
-        if config.Testing then
-            console.writeline("Running")
+        -- Main testing function here
+        if config.Testing == true then
+            console.writeline(forms.gettext(agentDropdown))
+
         end
 
     end
