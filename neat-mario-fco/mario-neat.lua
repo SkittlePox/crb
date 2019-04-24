@@ -883,11 +883,17 @@ end
 
 function addZeros(num, max)
     local n = tostring(num)
+    local nlen = string.len(n)
     local mlen = string.len(tostring(max))
 
-    while string.len(n) < mlen do
-        n = "0"..n
+    if max % 1 ~= 0 then
+        mlen = mlen - 2
     end
+    if num % 1 ~= 0 then
+        nlen = nlen - 2
+    end
+
+    for i=1,mlen-nlen do n = "0"..n end
     return n
 end
 
@@ -912,7 +918,7 @@ function loadPoolFile(filename)
             local genome = newGenome()
             table.insert(species.genomes, genome)
             genome.fitness = file:read("*number")
-            agentTable[index] = "species: " .. addZeros(s, numSpecies) .. " genome: " .. tostring(g)
+            agentTable[index] = "species: " .. addZeros(s, numSpecies) .. "    genome: " .. addZeros(g, 100) .. "    fitness: " .. addZeros(genome.fitness, pool.maxFitness)
             index = index + 1
             genome.maxneuron = file:read("*number")
             local line = file:read("*line")
@@ -960,6 +966,7 @@ function loadPoolFile(filename)
         initializeRun(config.NeatConfig.Filename)
         pool.currentFrame = pool.currentFrame + 1
     end
+    forms.settext(GenerationLabel, "Generation: " .. pool.generation)
     forms.setdropdownitems(agentDropdown, agentTable)
 end
 
@@ -968,6 +975,22 @@ function flipState()
         config.Running = false
         forms.settext(startButton, "Start")
     else
+        if config.Testing == true then
+            -- console.writeline(forms.gettext(agentDropdown))
+            -- set pool.currentSpecies and pool.currentGenome
+            local a = forms.gettext(agentDropdown)
+            local genomeIndex = string.find(a, "g")
+            local fitnessIndex = string.find(a, "f")
+            local s = tonumber(string.sub(a, 10, genomeIndex - 5))
+            local g = tonumber(string.sub(a, genomeIndex + 8, fitnessIndex - 5))
+            pool.currentSpecies = s
+            pool.currentGenome = g
+            forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
+            forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)
+            -- initializeRun with alternate filename
+            initializeRun(forms.gettext(altsimFile))
+            pool.currentFrame = pool.currentFrame + 1
+        end
         config.Running = true
         forms.settext(startButton, "Stop")
     end
@@ -1065,7 +1088,7 @@ saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 altSimLabel = forms.label(form, "State File:", 5, 177)
 altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 200)
 
-agentDropdown = forms.dropdown(form, agentTable, 101, 61, 150, 5)
+agentDropdown = forms.dropdown(form, agentTable, 101, 61, 300, 5)
 
 while true do
     if config.Running == true then
@@ -1098,6 +1121,13 @@ while true do
                 memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
             elseif memory.read_s8(0x0019) ~= 0x00 then
                 memory.write_s8(0x0019, 0x00)
+            end
+
+            -- Prevents message box
+            if memory.read_s8(0x1426) ~= 0 then
+                memory.write_s8(0x1426, 0x00)
+                memory.write_s8(0x1B89, 0x04)
+                memory.write_s8(0x1B88, 0x01)
             end
 
             timeout = timeout - 1
@@ -1163,8 +1193,67 @@ while true do
 
         -- Main testing function here
         if config.Testing == true then
-            console.writeline(forms.gettext(agentDropdown))
+            local species = pool.species[pool.currentSpecies]
+            local genome = species.genomes[pool.currentGenome]
 
+            displayGenome(genome)
+
+            if pool.currentFrame%5 == 0 then
+                evaluateCurrent(species, genome)
+            end
+
+            joypad.set(controller)
+
+            game.getPositions()
+
+            if marioX > rightmost then
+                rightmost = marioX
+                timeout = config.NeatConfig.TimeoutConstant
+            end
+
+            -- Prevents Mario from reaching higher powerup state
+            if memory.read_s8(0x0071) == 0x02
+            or memory.read_s8(0x0071) == 0x03
+            or memory.read_s8(0x0071) == 0x04 then
+                console.writeline(memory.read_s8(0x1496)) -- animation timing check
+                memory.write_s8(0x0071, 0x00)
+                memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
+            elseif memory.read_s8(0x0019) ~= 0x00 then
+                memory.write_s8(0x0019, 0x00)
+            end
+
+            -- Prevents message box
+            if memory.read_s8(0x1426) ~= 0 then
+                memory.write_s8(0x1426, 0x00)
+                memory.write_s8(0x1B89, 0x04)
+                memory.write_s8(0x1B88, 0x01)
+            end
+
+            timeout = timeout - 1
+            local timeoutBonus = pool.currentFrame / 4
+
+            -- If mario dies or wins level
+            if timeout + timeoutBonus <= 0
+            or memory.read_s8(0x0071) == 0x09
+            or memory.read_s8(0x0DD5) == 0x01 then
+
+                local fitness = rightmost - pool.currentFrame / 2
+                -- mario wins level
+                if memory.read_s8(0x0DD5) == 0x01 then
+                    fitness = fitness + 1000
+                    -- console.writeline("!!!!!!Beat level!!!!!!!")
+                end
+                console.writeline("TEST RUN: Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
+
+                flipState()
+            end
+
+            forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2))
+            forms.settext(GenerationLabel, "Generation: " .. pool.generation)
+            forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
+            forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)
+
+            pool.currentFrame = pool.currentFrame + 1
         end
 
     end

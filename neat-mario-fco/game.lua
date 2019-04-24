@@ -99,14 +99,15 @@ function _M.getInputs()
                 distx = math.abs(sprites[i]["x"] - (marioX + dx))
                 disty = math.abs(sprites[i]["y"] - (marioY + dy))
                 if distx <= 8 and disty <= 8
-                and sprites[i]["num"] ~= 0x74
-                and sprites[i]["num"] ~= 0x75
-                and sprites[i]["num"] ~= 0x76
-                and sprites[i]["num"] ~= 0x77
-                and sprites[i]["num"] ~= 0x78
-                and sprites[i]["num"] ~= 0x7B
-                and sprites[i]["num"] ~= 0x4C
-                and sprites[i]["num"] ~= 0xC7 then
+                and sprites[i]["num"] ~= 0x74       -- Mushroom
+                and sprites[i]["num"] ~= 0x75       -- Flower
+                and sprites[i]["num"] ~= 0x76       -- Star
+                and sprites[i]["num"] ~= 0x77       -- Feather
+                and sprites[i]["num"] ~= 0x78       -- 1-Up
+                and sprites[i]["num"] ~= 0x7B       -- Goal Tape
+                and sprites[i]["num"] ~= 0x4C       -- Exploding Block
+                and sprites[i]["num"] ~= 0xC7       -- Invisible Mushroom
+                and sprites[i]["num"] ~= 0xB9 then  -- Info Box
                     inputs[#inputs] = -1
                 end
             end
