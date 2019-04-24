@@ -1,0 +1,25 @@
+Generation
+Max Fitness
+# of Species in generation
+[
+    Top Fitness in this species
+    Staleness of Species
+    # of Genomes in this species
+    [       -- Per Genome
+        Fitness
+        Max Neuron
+        [   -- Per Mutations
+            mutation
+            rate
+        ]
+        "done"
+        # of Genes
+        [   -- Per Gene
+            into
+            out
+            weight
+            innovation
+            (1: enabled, 0: disabled)
+        ]
+    ]
+]

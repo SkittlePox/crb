@@ -662,7 +662,7 @@ function nextGenome()
         pool.currentGenome = 1
         pool.currentSpecies = pool.currentSpecies + 1
         if pool.currentSpecies > #pool.species then
-            console.writeline("Generation " .. pool.generation .. " Completed")
+            console.writeline("Generation " .. pool.generation .. " Completed     Max Fitness: " .. pool.maxFitness)
             pool.currentSpecies = 1
             pool.newgen = 1
         end
@@ -839,7 +839,6 @@ function writeFile(filename)
         file:write(#species.genomes .. "\n")
         for m, genome in pairs(species.genomes) do
             file:write(genome.fitness .. "\n")
-            -- console.writeline(genome.fitness)   --- Testing
             file:write(genome.maxneuron .. "\n")
             for mutation, rate in pairs(genome.mutationRates) do
                 file:write(mutation .. "\n")
@@ -979,7 +978,6 @@ function flipState()
         forms.settext(startButton, "Start")
     else
         if config.Testing == true then
-            -- console.writeline(forms.gettext(agentDropdown))
             -- set pool.currentSpecies and pool.currentGenome
             local a = forms.gettext(agentDropdown)
             local genomeIndex = string.find(a, "g")
@@ -1178,6 +1176,7 @@ while true do
                 --         newGeneration()
                 --     end
                 -- end
+                
                 if resume ~= nil then
                     pool.currentSpecies = resume[1]
                     pool.currentGenome = resume[2]
@@ -1226,7 +1225,6 @@ while true do
             end
 
             joypad.set(controller)
-
             game.getPositions()
 
             if marioX > rightmost then
@@ -1264,10 +1262,8 @@ while true do
                 -- mario wins level
                 if memory.read_s8(0x0DD5) == 0x01 then
                     fitness = fitness + 1000
-                    -- console.writeline("!!!!!!Beat level!!!!!!!")
                 end
                 console.writeline("TEST RUN: Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
-
                 flipState()
             end
 
