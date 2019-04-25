@@ -662,7 +662,7 @@ function nextGenome()
         pool.currentGenome = 1
         pool.currentSpecies = pool.currentSpecies + 1
         if pool.currentSpecies > #pool.species then
-            console.writeline("Generation " .. pool.generation .. " Completed     Max Fitness: " .. pool.maxFitness)
+            if config.Testing == false then console.writeline("Generation " .. pool.generation .. " Completed     Max Fitness: " .. pool.maxFitness) end
             pool.currentSpecies = 1
             pool.newgen = 1
         end
@@ -674,6 +674,13 @@ function fitnessAlreadyMeasured()
     local genome = species.genomes[pool.currentGenome]
 
     return genome.fitness ~= 0
+end
+
+function fitnessBelowThreshold(threshold)
+    local species = pool.species[pool.currentSpecies]
+    local genome = species.genomes[pool.currentGenome]
+
+    return genome.fitness < threshold
 end
 
 -- END NEAT FUNCTIONS ----------------------------------------------------------
@@ -969,6 +976,8 @@ function loadPoolFile(filename)
         pool.currentFrame = pool.currentFrame + 1
     end
     forms.settext(GenerationLabel, "Generation: " .. pool.generation)
+    forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
+    forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)
     forms.setdropdownitems(agentDropdown, agentTable)
 end
 
@@ -978,14 +987,27 @@ function flipState()
         forms.settext(startButton, "Start")
     else
         if config.Testing == true then
-            -- set pool.currentSpecies and pool.currentGenome
-            local a = forms.gettext(agentDropdown)
-            local genomeIndex = string.find(a, "g")
-            local fitnessIndex = string.find(a, "f")
-            local s = tonumber(string.sub(a, 10, genomeIndex - 5))
-            local g = tonumber(string.sub(a, genomeIndex + 8, fitnessIndex - 5))
-            pool.currentSpecies = s
-            pool.currentGenome = g
+            if forms.ischecked(threshCheckbox) then
+                pool.currentSpecies = 1
+                pool.currentGenome = 1
+                local thresh = tonumber(forms.gettext(threshTextbox))
+                while fitnessBelowThreshold(thresh) do   -- placeholder threshold
+                    nextGenome()
+                    if pool.newgen == 1 then
+                        console.writeline("There are no agents above "..thresh)
+                        return
+                    end
+                end
+            else
+                -- set pool.currentSpecies and pool.currentGenome
+                local a = forms.gettext(agentDropdown)
+                local genomeIndex = string.find(a, "g")
+                local fitnessIndex = string.find(a, "f")
+                local s = tonumber(string.sub(a, 10, genomeIndex - 5))
+                local g = tonumber(string.sub(a, genomeIndex + 8, fitnessIndex - 5))
+                pool.currentSpecies = s
+                pool.currentGenome = g
+            end
             forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
             forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)
             -- initializeRun with alternate filename
@@ -1028,9 +1050,8 @@ function playTop()
 end
 
 function record_agent(generation, species, genome)
-    local file = io.open(config.PoolDir..config.WhichState..".gen"..generation..".wins", "a")
-    file:write(species.."\n")
-    file:write(genome.."\n")
+    local file = io.open(config.PoolDir..config.WhichState..".wins", "a")
+    file:write(generation.." "..species.." "..genome.."\n")
     file:close()
 end
 
@@ -1065,6 +1086,9 @@ resume = nil
 
 function onExit()
     forms.destroy(form)
+    if config.Testing == false then
+        writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
+    end
     config.Running = false
     config.Testing = false
 end
@@ -1087,14 +1111,21 @@ saveButton = forms.button(form, "Save", savePool, 5, 102)
 loadButton = forms.button(form, "Load", loadPool, 80, 102)
 playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
 
-saveLoadFile = forms.textbox(form, config.NeatConfig.Filename .. ".pool", 350, 25, nil, 5, 148)
+saveLoadFile = forms.textbox(form, config.PoolDir..config.WhichState .. ".pool", 350, 25, nil, 5, 148)
 saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 
 -- altsimCheckbox = forms.checkbox(form, "Alt Environment", 5, 170)
 altSimLabel = forms.label(form, "State File:", 5, 177)
-altsimFile = forms.textbox(form, config.PoolDir..config.WhichState, 350, 25, nil, 5, 200)
+altsimFile = forms.textbox(form, config.NeatConfig.Filename, 350, 25, nil, 5, 200)
 
 agentDropdown = forms.dropdown(form, agentTable, 101, 61, 300, 5)
+
+-- threshold checkbox
+threshCheckbox = forms.checkbox(form, "Threshold:", 315, 102)
+threshTextbox = forms.textbox(form, 2000, 40, 25, nil, 420, 102)
+-- threshold textbox
+
+-- record training data checkbox
 
 while true do
     if config.Running == true then
@@ -1165,18 +1196,6 @@ while true do
 
                 console.writeline("Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
 
-
-                -- pool.currentSpecies = 1
-                -- pool.currentGenome = 1
-                --
-                -- while fitnessAlreadyMeasured() do
-                --     console.writeline("Skipping "..pool.currentGenome)
-                --     nextGenome()
-                --     if pool.newgen == 1 then
-                --         newGeneration()
-                --     end
-                -- end
-                
                 if resume ~= nil then
                     pool.currentSpecies = resume[1]
                     pool.currentGenome = resume[2]
@@ -1186,6 +1205,7 @@ while true do
                     nextGenome()
                     if pool.newgen == 1 then
                         writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
+                        console.writeline("Generation Saved")
                         newGeneration()
                     end
                 end
@@ -1212,7 +1232,7 @@ while true do
 
             pool.currentFrame = pool.currentFrame + 1
         end
-
+--------------------------------------------------------------------------------
         -- Main testing function here
         if config.Testing == true then
             local species = pool.species[pool.currentSpecies]
@@ -1236,7 +1256,7 @@ while true do
             if memory.read_s8(0x0071) == 0x02
             or memory.read_s8(0x0071) == 0x03
             or memory.read_s8(0x0071) == 0x04 then
-                console.writeline(memory.read_s8(0x1496)) -- animation timing check
+                -- console.writeline(memory.read_s8(0x1496)) -- animation timing check
                 memory.write_s8(0x0071, 0x00)
                 memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
             elseif memory.read_s8(0x0019) ~= 0x00 then
@@ -1264,7 +1284,22 @@ while true do
                     fitness = fitness + 1000
                 end
                 console.writeline("TEST RUN: Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
-                flipState()
+
+                -- To Be Tested
+                if forms.ischecked(threshCheckbox) then   --Running agents above fitness threshold
+                    --get next one running
+                    nextGenome()
+                    while fitnessBelowThreshold(tonumber(forms.gettext(threshTextbox))) do   -- placeholder threshold
+                        nextGenome()
+                        if pool.newgen == 1 then
+                            flipState()
+                            break
+                        end
+                    end
+                else
+                    flipState()
+                end
+                initializeRun(forms.gettext(altsimFile))
             end
 
             forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2))
