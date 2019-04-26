@@ -13,6 +13,8 @@ _M.StateNo = 2
 
 _M.WhichState = _M.State[_M.StateNo]
 
+_M.Records = _M.PoolDir .. "records.csv"
+
 _M.NeatConfig = {
     Filename = _M.StateDir .. _M.State[_M.StateNo],
     Population = 300,

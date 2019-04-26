@@ -7,6 +7,8 @@ mathFunctions = require "mathFunctions"
 Inputs = config.InputSize + 1
 Outputs = #config.ButtonNames
 
+recordTable = {}
+
 function newInnovation()
     pool.innovation = pool.innovation + 1
     return pool.innovation
@@ -148,11 +150,16 @@ function generateNetwork(genome)
     genome.network = network
 end
 
-function evaluateNetwork(network, inputs)
+function evaluateNetwork(network, inputs, recordTdata)
     table.insert(inputs, 1)
     if #inputs ~= Inputs then
         console.writeline("Incorrect number of neural network inputs.")
         return {}
+    end
+
+    local tdata = ""
+    if recordTdata then
+        tdata = tdata..table_to_string_raw(inputs, true)
     end
 
     for i = 1, Inputs do
@@ -180,6 +187,11 @@ function evaluateNetwork(network, inputs)
         else
             outputs[button] = false
         end
+    end
+
+    if recordTdata then
+        tdata = tdata..table_to_string_raw(outputs, false)
+        table.insert(recordTable, tdata)
     end
 
     return outputs
@@ -629,9 +641,9 @@ function newGeneration()
     writeFile(config.PoolDir..config.WhichState .. ".pool.gen" .. pool.generation .. ".pool")
 end
 
-function evaluateCurrent(species, genome)
+function evaluateCurrent(species, genome, recordTdata)
     inputs = game.getInputs()
-    controller = evaluateNetwork(genome.network, inputs)
+    controller = evaluateNetwork(genome.network, inputs, recordTdata)
 
     if controller["P1 Left"] and controller["P1 Right"] then
         controller["P1 Left"] = false
@@ -832,7 +844,7 @@ function initializeRun(filename)
     local species = pool.species[pool.currentSpecies]
     local genome = species.genomes[pool.currentGenome]
     generateNetwork(genome)
-    evaluateCurrent(species, genome)
+    evaluateCurrent(species, genome, false)
 end
 
 function writeFile(filename)
@@ -985,6 +997,7 @@ function flipState()
     if config.Running == true then
         config.Running = false
         forms.settext(startButton, "Start")
+        recordTable = {}
     else
         if config.Testing == true then
             if forms.ischecked(threshCheckbox) then
@@ -1071,6 +1084,60 @@ function flipTest()
     forms.settext(startButton, "Start")
 end
 
+function table_to_string(tbl)
+    local result = "{"
+    for k, v in pairs(tbl) do
+        -- Check the key type (ignore any numerical keys - assume its an array)
+        if type(k) == "string" then
+            result = result.."[\""..k.."\"]".."="
+        end
+
+        -- Check the value type
+        if type(v) == "table" then
+            result = result..table_to_string(v)
+        elseif type(v) == "boolean" then
+            result = result..tostring(v)
+        else
+            result = result.."\""..v.."\""
+        end
+        result = result..","
+    end
+    -- Remove leading commas from the result
+    if result ~= "" then
+        result = result:sub(1, result:len() - 1)
+    end
+    return result.."}"
+end
+
+function table_to_string_raw(tbl, trail)
+    local result = ""
+    for k, v in pairs(tbl) do
+
+        -- Check the value type
+        if type(v) == "table" then
+            result = result..table_to_string(v)
+        elseif type(v) == "boolean" then
+            local b = 0
+            if v == true then
+                b = 1
+            end
+            result = result..b
+        else
+            result = result..v
+        end
+        result = result..","
+    end
+
+    if trail == false then
+        -- Remove leading commas from the result
+        if result ~= "" then
+            result = result:sub(1, result:len() - 1)
+        end
+    end
+
+    return result
+end
+
 -- END TESTING FUNCTIONS -------------------------------------------------------
 
 -- MAIN ------------------------------------------------------------------------
@@ -1083,6 +1150,8 @@ netPicture = forms.pictureBox(form, 5, 250, 470, 200)
 
 agentTable = {"Load Pool To Begin"}
 resume = nil
+-- records = config.Records
+recordFile = io.open(config.Records, "a")
 
 function onExit()
     forms.destroy(form)
@@ -1091,6 +1160,10 @@ function onExit()
     end
     config.Running = false
     config.Testing = false
+    if recordFile then -- close only if opened
+     recordFile:close()
+     recordFile = nil
+   end
 end
 
 writeFile(config.PoolDir.."temp.pool")
@@ -1114,16 +1187,14 @@ playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
 saveLoadFile = forms.textbox(form, config.PoolDir..config.WhichState .. ".pool", 350, 25, nil, 5, 148)
 saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 
--- altsimCheckbox = forms.checkbox(form, "Alt Environment", 5, 170)
 altSimLabel = forms.label(form, "State File:", 5, 177)
 altsimFile = forms.textbox(form, config.NeatConfig.Filename, 350, 25, nil, 5, 200)
 
 agentDropdown = forms.dropdown(form, agentTable, 101, 61, 300, 5)
 
--- threshold checkbox
 threshCheckbox = forms.checkbox(form, "Threshold:", 315, 102)
 threshTextbox = forms.textbox(form, 2000, 40, 25, nil, 420, 102)
--- threshold textbox
+recordCheckbox = forms.checkbox(form, "Record", 315, 123)
 
 -- record training data checkbox
 
@@ -1137,7 +1208,7 @@ while true do
             displayGenome(genome)
 
             if pool.currentFrame%5 == 0 then
-                evaluateCurrent(species, genome)
+                evaluateCurrent(species, genome, false)
             end
 
             joypad.set(controller)
@@ -1232,7 +1303,9 @@ while true do
 
             pool.currentFrame = pool.currentFrame + 1
         end
+
 --------------------------------------------------------------------------------
+
         -- Main testing function here
         if config.Testing == true then
             local species = pool.species[pool.currentSpecies]
@@ -1241,7 +1314,7 @@ while true do
             displayGenome(genome)
 
             if pool.currentFrame%5 == 0 then
-                evaluateCurrent(species, genome)
+                evaluateCurrent(species, genome, forms.ischecked(recordCheckbox))
             end
 
             joypad.set(controller)
@@ -1278,6 +1351,18 @@ while true do
             or memory.read_s8(0x0071) == 0x09
             or memory.read_s8(0x0DD5) == 0x01 then
 
+                -- purge last 50 entries if timeout
+                -- purge last 15 entries if death
+                -- purge last xx entries if win
+                if forms.ischecked(recordCheckbox) then
+                    local counter = 0
+                    if timeout + timeoutBonus <= 0 then counter = 50 end
+                    if memory.read_s8(0x0071) == 0x09 then counter = 15 end -- death
+                    if memory.read_s8(0x0DD5) == 0x01 then counter = 100 end -- win
+
+                    for del = 1,counter do table.remove(recordTable) end
+                end
+
                 local fitness = rightmost - pool.currentFrame / 2
                 -- mario wins level
                 if memory.read_s8(0x0DD5) == 0x01 then
@@ -1285,11 +1370,10 @@ while true do
                 end
                 console.writeline("TEST RUN: Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
 
-                -- To Be Tested
                 if forms.ischecked(threshCheckbox) then   --Running agents above fitness threshold
                     --get next one running
                     nextGenome()
-                    while fitnessBelowThreshold(tonumber(forms.gettext(threshTextbox))) do   -- placeholder threshold
+                    while fitnessBelowThreshold(tonumber(forms.gettext(threshTextbox))) do
                         nextGenome()
                         if pool.newgen == 1 then
                             flipState()
@@ -1297,6 +1381,10 @@ while true do
                         end
                     end
                 else
+                    if forms.ischecked(recordCheckbox) then
+                        for i,v in ipairs(recordTable) do recordFile:write(v.."\n") end
+                        console.writeline("Training Data Recorded")
+                    end
                     flipState()
                 end
                 initializeRun(forms.gettext(altsimFile))
