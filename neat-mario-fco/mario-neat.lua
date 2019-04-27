@@ -1353,7 +1353,7 @@ while true do
 
                 -- purge last 50 entries if timeout
                 -- purge last 15 entries if death
-                -- purge last xx entries if win
+                -- purge last 100 entries if win
                 if forms.ischecked(recordCheckbox) then
                     local counter = 0
                     if timeout + timeoutBonus <= 0 then counter = 50 end
@@ -1376,6 +1376,10 @@ while true do
                     while fitnessBelowThreshold(tonumber(forms.gettext(threshTextbox))) do
                         nextGenome()
                         if pool.newgen == 1 then
+                            if forms.ischecked(recordCheckbox) then
+                                for i,v in ipairs(recordTable) do recordFile:write(v.."\n") end
+                                console.writeline("Training Data Recorded")
+                            end
                             flipState()
                             break
                         end

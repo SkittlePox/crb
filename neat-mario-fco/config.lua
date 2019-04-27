@@ -6,7 +6,7 @@ _M.StateDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/state/"
 _M.PoolDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/pool/"
 
 _M.State = {
-    "YI2.state", -- Yoshi's Island 2 TO BE RUN ON TRAINING ROM ONLY
+    "YI2.state", -- Yoshi's Island 2
     "DP1.state", -- Donut Plains 1
 }
 _M.StateNo = 2
