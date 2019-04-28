@@ -7,6 +7,11 @@ mathFunctions = require "mathFunctions"
 Inputs = config.InputSize + 1
 Outputs = #config.ButtonNames
 
+W1 = nil     -- [170 by 170]
+W2 = nil     -- [170 by 8]
+b1 = nil   -- [1 by 170]
+b2 = nil   -- [1 by 8]
+
 recordTable = {}
 
 function newInnovation()
@@ -1026,6 +1031,8 @@ function flipState()
             -- initializeRun with alternate filename
             initializeRun(forms.gettext(altsimFile))
             pool.currentFrame = pool.currentFrame + 1
+        elseif config.Network == true then
+            -- TODO not sure if this clause is necessary
         end
         config.Running = true
         forms.settext(startButton, "Stop")
@@ -1075,6 +1082,10 @@ end
 function flipTest()
     if config.Testing == true then
         config.Testing = false
+        config.Network = true
+        forms.settext(testButton, "Network")
+    elseif config.Network = true then
+        config.Network = false
         forms.settext(testButton, "Training")
     else
         config.Testing = true
@@ -1140,6 +1151,102 @@ end
 
 -- END TESTING FUNCTIONS -------------------------------------------------------
 
+-- START ML FUNCTIONS ----------------------------------------------------------
+
+function MatMul( m1, m2 )
+    if #m1[1] ~= #m2 then       -- inner matrix-dimensions must agree
+        return nil
+    end
+
+    local res = {}
+
+    for i = 1, #m1 do
+        res[i] = {}
+        for j = 1, #m2[1] do
+            res[i][j] = 0
+            for k = 1, #m2 do
+                res[i][j] = res[i][j] + m1[i][k] * m2[k][j]
+            end
+        end
+    end
+
+    return res
+end
+
+-- -- Test for MatMul
+-- mat1 = { { 1, 2, 3 }, { 4, 5, 6 } }
+-- mat2 = { { 1, 2 }, { 3, 4 }, { 5, 6 } }
+-- erg = MatMul( mat1, mat2 )
+-- for i = 1, #erg do
+--     for j = 1, #erg[1] do
+--         io.write( erg[i][j] )
+--         io.write("  ")
+--     end
+--     io.write("\n")
+-- end
+
+function reLU(val)
+    if val < 0 then return 0 else return val end
+end
+
+-- Need sigmoid function
+function sigmoid(val)
+    return 1 / (1 + math.exp(-val))
+end
+
+function loadNetwork()
+    -- TODO
+end
+
+function predict()
+    -- TODO
+    -- first_layer = input*U + b1
+    -- apply reLU on all elements of first_layer
+    -- second_layer = result*V + b2
+    -- apply sigmoid on all elements of second_layer
+    -- we are left with prediction
+
+    local input = game.getInputs()
+    table.insert(input, 1)
+
+    first_layer = MatMul(input, W1)
+
+    for i=1, #first_layer do
+        first_layer[i] = reLU(first_layer[i] + b1[i])
+    end
+
+    second_layer = MatMul(first_layer, W2)
+
+    for i=1, #second_layer do
+        second_layer[i] = sigmoid(second_layer[i] + b2[i])
+    end
+
+    local outputs = {}
+    for o = 1, 8 do
+        local button = "P1 " .. config.ButtonNames[o]
+        if second_layer[o] > 0.5 then
+            outputs[button] = true
+        else
+            outputs[button] = false
+        end
+    end
+
+    controller = outputs
+
+    if controller["P1 Left"] and controller["P1 Right"] then
+        controller["P1 Left"] = false
+        controller["P1 Right"] = false
+    end
+    if controller["P1 Up"] and controller["P1 Down"] then
+        controller["P1 Up"] = false
+        controller["P1 Down"] = false
+    end
+
+    joypad.set(controller)
+end
+
+-- END ML FUNCTIONS ------------------------------------------------------------
+
 -- MAIN ------------------------------------------------------------------------
 if pool == nil then
     initializePool()
@@ -1184,11 +1291,11 @@ saveButton = forms.button(form, "Save", savePool, 5, 102)
 loadButton = forms.button(form, "Load", loadPool, 80, 102)
 playTopButton = forms.button(form, "Play Top", playTop, 230, 102)
 
-saveLoadFile = forms.textbox(form, config.PoolDir..config.WhichState .. ".pool", 350, 25, nil, 5, 148)
+saveLoadFile = forms.textbox(form, config.PoolDir..config.WhichState .. ".pool", 300, 25, nil, 5, 148)
 saveLoadLabel = forms.label(form, "Pool Save/Load:", 5, 129)
 
 altSimLabel = forms.label(form, "State File:", 5, 177)
-altsimFile = forms.textbox(form, config.NeatConfig.Filename, 350, 25, nil, 5, 200)
+altsimFile = forms.textbox(form, config.NeatConfig.Filename, 300, 25, nil, 5, 200)
 
 agentDropdown = forms.dropdown(form, agentTable, 101, 61, 300, 5)
 
@@ -1196,12 +1303,15 @@ threshCheckbox = forms.checkbox(form, "Threshold:", 315, 102)
 threshTextbox = forms.textbox(form, 2000, 40, 25, nil, 420, 102)
 recordCheckbox = forms.checkbox(form, "Record", 315, 123)
 
+loadNetworkButton = forms.button(form, "Load Net", loadNetwork, 400, 147)
+-- runNetworkButton = forms.button(form, "Start Net", flipNet, 400, 176)
+
 -- record training data checkbox
 
 while true do
     if config.Running == true then
         -- If NEAT is training
-        if config.Testing == false then
+        if config.Testing == false and config.Network == false then
             local species = pool.species[pool.currentSpecies]
             local genome = species.genomes[pool.currentGenome]
 
@@ -1307,7 +1417,7 @@ while true do
 --------------------------------------------------------------------------------
 
         -- Main testing function here
-        if config.Testing == true then
+        if config.Testing == true and config.Network == false then
             local species = pool.species[pool.currentSpecies]
             local genome = species.genomes[pool.currentGenome]
 
@@ -1398,6 +1508,63 @@ while true do
             forms.settext(GenerationLabel, "Generation: " .. pool.generation)
             forms.settext(SpeciesLabel, "Species: " .. pool.currentSpecies)
             forms.settext(GenomeLabel, "Genome: " .. pool.currentGenome)
+
+            pool.currentFrame = pool.currentFrame + 1
+        end
+
+--------------------------------------------------------------------------------
+
+        -- Main network function here
+        if config.Network == true and config.Testing == false then
+            if pool.currentFrame%5 == 0 then
+                -- evaluateCurrent(species, genome, forms.ischecked(recordCheckbox))
+                -- run predict() here
+            end
+
+            joypad.set(controller)  -- fix controller
+            game.getPositions()
+
+            if marioX > rightmost then
+                rightmost = marioX
+                timeout = config.NeatConfig.TimeoutConstant
+            end
+
+            -- Prevents Mario from reaching higher powerup state
+            if memory.read_s8(0x0071) == 0x02
+            or memory.read_s8(0x0071) == 0x03
+            or memory.read_s8(0x0071) == 0x04 then
+                -- console.writeline(memory.read_s8(0x1496)) -- animation timing check
+                memory.write_s8(0x0071, 0x00)
+                memory.write_s8(0x0019, 0x00) --0019 is powerup status (0)
+            elseif memory.read_s8(0x0019) ~= 0x00 then
+                memory.write_s8(0x0019, 0x00)
+            end
+
+            -- Prevents message box
+            if memory.read_s8(0x1426) ~= 0 then
+                memory.write_s8(0x1426, 0x00)
+                memory.write_s8(0x1B89, 0x04)
+                memory.write_s8(0x1B88, 0x01)
+            end
+
+            timeout = timeout - 1
+            local timeoutBonus = pool.currentFrame / 4
+
+            -- If mario dies or wins level
+            if timeout + timeoutBonus <= 0
+            or memory.read_s8(0x0071) == 0x09
+            or memory.read_s8(0x0DD5) == 0x01 then
+                local fitness = rightmost - pool.currentFrame / 2
+                -- mario wins level
+                if memory.read_s8(0x0DD5) == 0x01 then
+                    fitness = fitness + 1000
+                end
+                console.writeline("NETWORK RUN: fitness: " .. fitness)
+
+                initializeRun(forms.gettext(altsimFile))
+            end
+
+            forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2))
 
             pool.currentFrame = pool.currentFrame + 1
         end

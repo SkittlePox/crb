@@ -51,5 +51,6 @@ _M.InputSize = (_M.BoxRadius * 2 + 1) * (_M.BoxRadius * 2 + 1)
 
 _M.Running = false
 _M.Testing = false
+_M.Network = false
 
 return _M
