@@ -4,6 +4,7 @@ _M.BizhawkDir = "C:/Users/Benjamin/Documents/SNES Shit/BizHawk-2.2.2/"
 
 _M.StateDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/state/"
 _M.PoolDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/pool/"
+_M.NetDir = _M.BizhawkDir .. "Lua/SNES/crb/neat-mario-fco/network/"
 
 _M.State = {
     "YI2.state", -- Yoshi's Island 2

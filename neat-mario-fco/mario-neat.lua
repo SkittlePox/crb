@@ -7,10 +7,10 @@ mathFunctions = require "mathFunctions"
 Inputs = config.InputSize + 1
 Outputs = #config.ButtonNames
 
-W1 = nil     -- [170 by 170]
-W2 = nil     -- [170 by 8]
-b1 = nil   -- [1 by 170]
-b2 = nil   -- [1 by 8]
+W1 = {}     -- [170 by 170]
+W2 = {}     -- [170 by 8]
+b1 = {}   -- [1 by 170]
+b2 = {}   -- [1 by 8]
 
 recordTable = {}
 
@@ -1084,7 +1084,7 @@ function flipTest()
         config.Testing = false
         config.Network = true
         forms.settext(testButton, "Network")
-    elseif config.Network = true then
+    elseif config.Network == true then
         config.Network = false
         forms.settext(testButton, "Training")
     else
@@ -1155,6 +1155,7 @@ end
 
 function MatMul( m1, m2 )
     if #m1[1] ~= #m2 then       -- inner matrix-dimensions must agree
+        console.writeline("Matrix mismatch")
         return nil
     end
 
@@ -1189,13 +1190,42 @@ function reLU(val)
     if val < 0 then return 0 else return val end
 end
 
--- Need sigmoid function
 function sigmoid(val)
     return 1 / (1 + math.exp(-val))
 end
 
 function loadNetwork()
-    -- TODO
+    local fname = forms.openfile("network.txt", config.NetDir)
+    local file = io.open(fname, "r")
+    console.writeline("Loading network from "..fname)
+
+    for i=1,170 do
+        W1[i] = {}
+        for j=1,170 do
+            W1[i][j] = file:read("*number")
+        end
+    end
+
+    b1[1] = {}
+    for j=1,170 do
+        b1[1][j] = file:read("*number")
+    end
+
+    for i=1,170 do
+        W2[i] = {}
+        for j=1,8 do
+            W2[i][j] = file:read("*number")
+        end
+    end
+
+    b2[1] = {}
+    for j=1,8 do
+        b2[1][j] = file:read("*number")
+    end
+
+    file:close()
+
+    console.writeline("Netork Loaded")
 end
 
 function predict()
@@ -1519,6 +1549,7 @@ while true do
             if pool.currentFrame%5 == 0 then
                 -- evaluateCurrent(species, genome, forms.ischecked(recordCheckbox))
                 -- run predict() here
+                predict()
             end
 
             joypad.set(controller)  -- fix controller
