@@ -13,6 +13,8 @@ b1 = {}   -- [1 by 170]
 b2 = {}   -- [1 by 8]
 
 recordTable = {}
+winners = {}
+winPool = ""
 
 function newInnovation()
     pool.innovation = pool.innovation + 1
@@ -1151,6 +1153,32 @@ function table_to_string_raw(tbl, trail)
     return result
 end
 
+function loadWins()
+    local fname = forms.openfile("DP1.state.wins", config.PoolDir)
+    local file = io.open(fname, "r")
+    console.writeline("Loading winners from "..fname)
+
+    local ln = file:read("*number")
+
+    winners = {}
+
+    for i=1, ln do
+        line = file:read("*line")
+        winners[i] = {}
+        local k = 1
+        for j in string.gmatch(line, "%S+") do
+            winners[i][k] = tonumber(j)
+            k = k + 1
+        end
+        -- console.writeline(table_to_string(winners[i]))
+    end
+
+    console.writeline("Winners Loaded")
+    winPool = string.sub(fname, 1, -5).."pool.gen"
+    -- console.writeline(winPool)
+    loadPoolFile(winPool..winners[1][1]..".pool")
+end
+
 -- END TESTING FUNCTIONS -------------------------------------------------------
 
 -- START ML FUNCTIONS ----------------------------------------------------------
@@ -1328,7 +1356,6 @@ netPicture = forms.pictureBox(form, 5, 250, 470, 200)
 
 agentTable = {"Load Pool To Begin"}
 resume = nil
--- records = config.Records
 recordFile = io.open(config.Records, "a")
 
 function onExit()
@@ -1373,8 +1400,10 @@ agentDropdown = forms.dropdown(form, agentTable, 101, 61, 300, 5)
 threshCheckbox = forms.checkbox(form, "Threshold:", 315, 102)
 threshTextbox = forms.textbox(form, 2000, 40, 25, nil, 420, 102)
 recordCheckbox = forms.checkbox(form, "Record", 315, 123)
+noguiCheckbox = forms.checkbox(form, "No GUI", 400, 123)
 
 loadNetworkButton = forms.button(form, "Load Net", loadNetwork, 400, 147)
+loadWinsButton = forms.button(form, "Load Wins", loadWins, 315, 147)
 -- runNetworkButton = forms.button(form, "Start Net", flipNet, 400, 176)
 
 
@@ -1385,7 +1414,9 @@ while true do
             local species = pool.species[pool.currentSpecies]
             local genome = species.genomes[pool.currentGenome]
 
-            displayGenome(genome)
+            if not forms.ischecked(noguiCheckbox) then
+                displayGenome(genome)
+            end
 
             if pool.currentFrame%5 == 0 then
                 evaluateCurrent(species, genome, false)
@@ -1491,7 +1522,9 @@ while true do
             local species = pool.species[pool.currentSpecies]
             local genome = species.genomes[pool.currentGenome]
 
-            displayGenome(genome)
+            if not forms.ischecked(noguiCheckbox) then
+                displayGenome(genome)
+            end
 
             if pool.currentFrame%5 == 0 then
                 evaluateCurrent(species, genome, forms.ischecked(recordCheckbox))
@@ -1550,25 +1583,31 @@ while true do
                 end
                 console.writeline("TEST RUN: Gen " .. pool.generation .. " species " .. pool.currentSpecies .. " genome " .. pool.currentGenome .. " fitness: " .. fitness)
 
+                if forms.ischecked(recordCheckbox) then
+                    for i,v in ipairs(recordTable) do recordFile:write(v.."\n") end
+                    console.writeline("Training Data Recorded")
+                    recordTable = {}
+                end
+
                 if forms.ischecked(threshCheckbox) then   --Running agents above fitness threshold
                     --get next one running
                     nextGenome()
                     while fitnessBelowThreshold(tonumber(forms.gettext(threshTextbox))) do
                         nextGenome()
                         if pool.newgen == 1 then
-                            if forms.ischecked(recordCheckbox) then
-                                for i,v in ipairs(recordTable) do recordFile:write(v.."\n") end
-                                console.writeline("Training Data Recorded")
-                            end
+                            -- if forms.ischecked(recordCheckbox) then
+                            --     for i,v in ipairs(recordTable) do recordFile:write(v.."\n") end
+                            --     console.writeline("Training Data Recorded")
+                            -- end
                             flipState()
                             break
                         end
                     end
                 else
-                    if forms.ischecked(recordCheckbox) then
-                        for i,v in ipairs(recordTable) do recordFile:write(v.."\n") end
-                        console.writeline("Training Data Recorded")
-                    end
+                    -- if forms.ischecked(recordCheckbox) then
+                    --     for i,v in ipairs(recordTable) do recordFile:write(v.."\n") end
+                    --     console.writeline("Training Data Recorded")
+                    -- end
                     flipState()
                 end
                 initializeRun(forms.gettext(altsimFile))
