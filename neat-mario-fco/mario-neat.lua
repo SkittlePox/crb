@@ -1176,25 +1176,37 @@ function MatMul( m1, m2 )
     return res
 end
 
--- -- Test for MatMul
--- mat1 = { { 1, 2, 3 }, { 4, 5, 6 } }
--- mat2 = { { 1, 2 }, { 3, 4 }, { 5, 6 } }
--- erg = MatMul( mat1, mat2 )
--- for i = 1, #erg do
---     for j = 1, #erg[1] do
---         io.write( erg[i][j] )
---         io.write("  ")
---     end
---     io.write("\n")
--- end
-
 function reLU(val)
     if val < 0 then return 0 else return val end
 end
 
-function sigmoid(val)
-    return 1 / (1 + math.exp(-val))
+function tanh(x)
+  if x == 0 then return 0.0 end
+  local neg = false
+  if x < 0 then x = -x; neg = true end
+  if x < 0.54930614433405 then
+    local y = x * x
+    x = x + x * y *
+        ((-0.96437492777225469787e0  * y +
+          -0.99225929672236083313e2) * y +
+          -0.16134119023996228053e4) /
+        (((0.10000000000000000000e1  * y +
+           0.11274474380534949335e3) * y +
+           0.22337720718962312926e4) * y +
+           0.48402357071988688686e4)
+  else
+    x = math.exp(x)
+    x = 1.0 - 2.0 / (x * x + 1.0)
+  end
+  if neg then x = -x end
+  return x
 end
+
+function sigmoid(val)
+    -- return 1 / (1 + math.exp(val*-1))
+    return (tanh(val/2)+1)/2
+end
+
 
 function loadNetwork()
     local fname = forms.openfile("network.txt", config.NetDir)
@@ -1208,10 +1220,14 @@ function loadNetwork()
         end
     end
 
+    -- console.writeline(table_to_string(W1))
+
     b1[1] = {}
     for j=1,170 do
         b1[1][j] = file:read("*number")
     end
+
+    -- console.writeline(table_to_string(b1))
 
     for i=1,170 do
         W2[i] = {}
@@ -1241,7 +1257,7 @@ function predict()
     local input = game.getInputs()
     table.insert(input, 1)
 
-    local inputb = {input}
+    local input = {input}
 
     -- local inputTranspose = {}
     --
@@ -1251,29 +1267,30 @@ function predict()
     --
     -- first_layer = MatMul(inputTranspose, W1)
 
-    local first_layer = MatMul(inputb, W1)
+    local first_layer = MatMul(input, W1)
 
     -- console.writeline("Dimensions: "..#first_layer.." "..#first_layer[1])
 
-    for i=1, #first_layer do
-        first_layer[i][i] = reLU(first_layer[1][i] + b1[1][i])
+    for i=1, #first_layer[1] do
+        local v = first_layer[1][i] + b1[1][i]
+        first_layer[1][i] = reLU(v)
     end
-
-
 
     -- first_layer = {first_layer}
 
     -- console.writeline("Dimensions: "..#first_layer.." "..#first_layer[1])
 
-
-
     local second_layer = MatMul(first_layer, W2)
 
-    for i=1, #second_layer do
-        second_layer[1][i] = sigmoid(second_layer[1][i] + b2[1][i])
+    -- console.writeline(table_to_string(second_layer))
+
+    for i=1, #second_layer[1] do
+        local v = second_layer[1][i] + b2[1][i]
+        -- console.writeline(v.." "..sigmoid(v))
+        second_layer[1][i] = sigmoid(v)
     end
 
-    -- console.writeline("Here 1")
+    -- console.writeline(table_to_string(second_layer))
 
     local outputs = {}
     for o = 1, 8 do
@@ -1360,7 +1377,6 @@ recordCheckbox = forms.checkbox(form, "Record", 315, 123)
 loadNetworkButton = forms.button(form, "Load Net", loadNetwork, 400, 147)
 -- runNetworkButton = forms.button(form, "Start Net", flipNet, 400, 176)
 
--- record training data checkbox
 
 while true do
     if config.Running == true then
