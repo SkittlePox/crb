@@ -1400,7 +1400,7 @@ agentDropdown = forms.dropdown(form, agentTable, 101, 61, 300, 5)
 threshCheckbox = forms.checkbox(form, "Threshold:", 315, 102)
 threshTextbox = forms.textbox(form, 2000, 40, 25, nil, 420, 102)
 recordCheckbox = forms.checkbox(form, "Record", 315, 123)
-noguiCheckbox = forms.checkbox(form, "No GUI", 400, 123)
+noguiCheckbox = forms.checkbox(form, "No GUI", 415, 123)
 
 loadNetworkButton = forms.button(form, "Load Net", loadNetwork, 400, 147)
 loadWinsButton = forms.button(form, "Load Wins", loadWins, 315, 147)
