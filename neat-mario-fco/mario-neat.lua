@@ -1033,6 +1033,8 @@ function flipState()
             pool.currentFrame = pool.currentFrame + 1
         elseif config.Network == true then
             -- TODO not sure if this clause is necessary
+            initializeRun(forms.gettext(altsimFile))
+            pool.currentFrame = pool.currentFrame + 1
         end
         config.Running = true
         forms.settext(startButton, "Stop")
@@ -1155,7 +1157,7 @@ end
 
 function MatMul( m1, m2 )
     if #m1[1] ~= #m2 then       -- inner matrix-dimensions must agree
-        console.writeline("Matrix mismatch")
+        console.writeline("Matrix mismatch: "..#m1[1].." != "..#m2)
         return nil
     end
 
@@ -1239,22 +1241,44 @@ function predict()
     local input = game.getInputs()
     table.insert(input, 1)
 
-    first_layer = MatMul(input, W1)
+    local inputb = {input}
+
+    -- local inputTranspose = {}
+    --
+    -- for i=1, 170 do
+    --     inputTranspose[i][1] = input[i]
+    -- end
+    --
+    -- first_layer = MatMul(inputTranspose, W1)
+
+    local first_layer = MatMul(inputb, W1)
+
+    -- console.writeline("Dimensions: "..#first_layer.." "..#first_layer[1])
 
     for i=1, #first_layer do
-        first_layer[i] = reLU(first_layer[i] + b1[i])
+        first_layer[i][i] = reLU(first_layer[1][i] + b1[1][i])
     end
 
-    second_layer = MatMul(first_layer, W2)
+
+
+    -- first_layer = {first_layer}
+
+    -- console.writeline("Dimensions: "..#first_layer.." "..#first_layer[1])
+
+
+
+    local second_layer = MatMul(first_layer, W2)
 
     for i=1, #second_layer do
-        second_layer[i] = sigmoid(second_layer[i] + b2[i])
+        second_layer[1][i] = sigmoid(second_layer[1][i] + b2[1][i])
     end
+
+    -- console.writeline("Here 1")
 
     local outputs = {}
     for o = 1, 8 do
         local button = "P1 " .. config.ButtonNames[o]
-        if second_layer[o] > 0.5 then
+        if second_layer[1][o] > 0.5 then
             outputs[button] = true
         else
             outputs[button] = false
