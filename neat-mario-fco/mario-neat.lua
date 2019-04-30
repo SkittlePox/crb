@@ -7,10 +7,14 @@ mathFunctions = require "mathFunctions"
 Inputs = config.InputSize + 1
 Outputs = #config.ButtonNames
 
-W1 = {}     -- [170 by 170]
-W2 = {}     -- [170 by 8]
-b1 = {}   -- [1 by 170]
+W1 = {}     -- [170 by 500]
+W1size = {170, 500}
+W2 = {}     -- [500 by 8]
+W2size = {500, 8}
+b1 = {}   -- [1 by 500]
+b1size = {1, 500}
 b2 = {}   -- [1 by 8]
+b2size = {1, 8}
 
 recordTable = {}
 winners = {}
@@ -1241,9 +1245,10 @@ function loadNetwork()
     local file = io.open(fname, "r")
     console.writeline("Loading network from "..fname)
 
-    for i=1,170 do
+    -- Load weights for W1
+    for i=1,W1size[1] do
         W1[i] = {}
-        for j=1,170 do
+        for j=1,W1size[2] do
             W1[i][j] = file:read("*number")
         end
     end
@@ -1251,21 +1256,21 @@ function loadNetwork()
     -- console.writeline(table_to_string(W1))
 
     b1[1] = {}
-    for j=1,170 do
+    for j=1,b1size[2] do
         b1[1][j] = file:read("*number")
     end
 
     -- console.writeline(table_to_string(b1))
 
-    for i=1,170 do
+    for i=1,W2size[1] do
         W2[i] = {}
-        for j=1,8 do
+        for j=1,W2size[2] do
             W2[i][j] = file:read("*number")
         end
     end
 
     b2[1] = {}
-    for j=1,8 do
+    for j=1,b2size[2] do
         b2[1][j] = file:read("*number")
     end
 
