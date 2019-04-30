@@ -1671,7 +1671,7 @@ while true do
                 end
                 console.writeline("NETWORK RUN: fitness: " .. fitness)
 
-                initializeRun(forms.gettext(altsimFile))
+                flipState()
             end
 
             forms.settext(FitnessLabel, "Fitness: " .. math.floor(rightmost - (pool.currentFrame) / 2))
